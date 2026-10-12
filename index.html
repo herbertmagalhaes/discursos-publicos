@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discursos Públicos</title>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --azul:#1769aa; --azul-escuro:#0d3b66; --fundo:#eaf2f8; --cartao:#ffffff;
+  --texto:#183042; --sim:#c8f7d0; --sim-texto:#176b2c;
+  --nao:#ffd1d1; --nao-texto:#9b1c1c; --borda:#d7e3ec;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; font-family:Arial, sans-serif; color:var(--texto);
+  background:linear-gradient(180deg,#eaf2f8 0%,#f5f9fc 100%); min-height:100vh;
+}
+.container { max-width:1050px; margin:auto; padding:22px 16px 50px; }
+header {
+  background:linear-gradient(135deg,var(--azul-escuro),var(--azul)); color:white;
+  border-radius:18px; padding:24px; box-shadow:0 8px 25px #0d3b6630;
+}
+h1 { margin:0 0 6px; font-size:30px; }
+.subtitulo { margin:0; opacity:.9; }
+.painel {
+  background:var(--cartao); margin-top:16px; padding:16px; border-radius:16px;
+  box-shadow:0 4px 18px #0d3b6612; border:1px solid var(--borda);
+}
+.linha { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+input {
+  flex:1; min-width:230px; padding:13px 15px; border:1px solid #c8d6e2;
+  border-radius:11px; font-size:15px; outline:none;
+}
+input:focus,select:focus { border-color:var(--azul); box-shadow:0 0 0 3px #1769aa18; }
+select { width:100%; min-width:0; margin-top:6px; padding:13px 15px; border:1px solid #c8d6e2; border-radius:11px; font-size:15px; background:#fff; }
+button {
+  border:0; border-radius:10px; padding:11px 15px; font-weight:700;
+  cursor:pointer; transition:.15s; font-size:14px;
+}
+button:hover { transform:translateY(-1px); filter:brightness(.98); }
+.primario { background:var(--azul); color:white; }
+.secundario { background:#edf2f6; color:#334e68; }
+.salvar { background:#176b2c; color:white; }
+.status { margin-top:10px; font-size:14px; color:#526779; }
+#lista { margin-top:16px; }
+.item {
+  background:white; border:1px solid var(--borda); border-radius:14px; padding:14px;
+  margin:9px 0; display:flex; align-items:center; gap:12px;
+  box-shadow:0 2px 8px #0d3b660b;
+}
+.numero { width:44px; font-weight:800; color:var(--azul-escuro); font-size:16px; text-align:center; }
+.titulo { flex:1; line-height:1.4; }
+.escolha { display:flex; gap:7px; }
+.escolha button { min-width:70px; }
+.sim { background:var(--sim); color:var(--sim-texto); }
+.nao { background:var(--nao); color:var(--nao-texto); }
+.selecionado { outline:3px solid #1769aa55; box-shadow:0 0 0 2px white inset; }
+.indisponivel {
+  opacity:.62; background:#f3f5f7; text-decoration:line-through;
+}
+.badge {
+  display:inline-block; margin-left:6px; padding:4px 8px; border-radius:999px;
+  background:#e2e7eb; color:#5c6770; font-size:11px; font-weight:800;
+  text-decoration:none;
+}
+.auth-card { max-width:520px; margin:50px auto; }
+.auth-card input { width:100%; margin:6px 0; }
+.auth-botoes { display:flex; gap:10px; margin-top:8px; }
+.erro { color:#a11; background:#fff1f1; padding:10px; border-radius:9px; margin-top:10px; display:none; }
+.oculto { display:none !important; }
+@media (max-width:650px) {
+  h1 { font-size:24px; }
+  .item { align-items:flex-start; }
+  .numero { width:34px; }
+  .titulo { font-size:14px; }
+  .escolha { flex-direction:column; }
+  .escolha button { min-width:68px; padding:10px 8px; }
+  .container { padding:12px 10px 35px; }
+}
+
+
+h2 { margin:0 0 6px; color:var(--azul-escuro); }
+.ajuda { margin:0 0 16px; color:#526779; font-size:14px; line-height:1.5; }
+.form-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.form-grid label { font-size:13px; font-weight:700; color:#334e68; }
+.form-grid input { width:100%; min-width:0; margin-top:6px; }
+.form-actions { margin-top:14px; }
+.orador-card {
+  border:1px solid var(--borda); border-radius:14px; padding:14px; margin:10px 0;
+  display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center;
+  background:#fff; box-shadow:0 2px 8px #0d3b660b;
+}
+.orador-nome { font-size:17px; font-weight:800; color:var(--azul-escuro); }
+.orador-detalhes { margin-top:5px; color:#526779; line-height:1.5; font-size:14px; }
+.orador-acoes { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+.orador-status { margin-top:8px; font-size:13px; font-weight:700; }
+.orador-status.enviado { color:#176b2c; }
+.orador-status.pendente { color:#9a6700; }
+.agenda-data { margin:18px 0 8px; padding:10px 12px; border-radius:10px; background:#eaf2f8; color:var(--azul-escuro); font-weight:800; }
+.contadores { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.contador { background:#edf2f6; border-radius:999px; padding:7px 11px; font-size:13px; font-weight:700; }
+.btn-enviado { background:#176b2c; color:#fff; }
+.btn-desfazer { background:#fff1d6; color:#805b00; }
+.vazio { text-align:center; padding:28px 10px; color:#718096; }
+@media (max-width:800px) { .form-grid { grid-template-columns:1fr; } }
+@media (max-width:650px) {
+  .orador-card { grid-template-columns:1fr; }
+  .orador-acoes { justify-content:flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="container auth-card">
+  <div class="painel">
+    <h1 style="color:#0d3b66;margin-top:0">Discursos Públicos</h1>
+    <p>Entre na sua conta para salvar suas marcações na internet.</p>
+    <input id="email" type="email" placeholder="E-mail">
+    <input id="senha" type="password" placeholder="Senha (mínimo 6 caracteres)">
+    <div class="auth-botoes">
+      <button class="primario" onclick="entrar()">Entrar</button>
+      <button class="secundario" onclick="criarConta()">Criar conta</button>
+    </div>
+    <div id="authErro" class="erro"></div>
+  </div>
+</div>
+
+<div id="app" class="container oculto">
+  <header>
+    <h1>Discursos Públicos</h1>
+    <p class="subtitulo">Gerencie discursos e oradores em um só lugar.</p>
+  </header>
+
+  <div class="painel">
+    <div class="linha">
+      <button id="tabDiscursos" class="primario" onclick="abrirAba('discursos')">📚 Discursos</button>
+      <button id="tabOradores" class="secundario" onclick="abrirAba('oradores')">🎤 Oradores</button>
+      <button class="secundario" onclick="sair()">Sair</button>
+    </div>
+    <div id="usuario" class="status"></div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <section id="abaDiscursos">
+    <div class="painel">
+      <div class="linha">
+        <input id="search" type="text" placeholder="🔎 Pesquisar por número ou título...">
+        <button class="salvar" onclick="salvar()">💾 Salvar marcações</button>
+        <button class="secundario" onclick="limpar()">🗑 Limpar marcações</button>
+      </div>
+    </div>
+    <div id="lista"></div>
+  </section>
+
+  <section id="abaOradores" class="oculto">
+    <div class="painel">
+      <h2>🎤 Cadastro de oradores</h2>
+      <p class="ajuda">Cadastre o nome, tema e congregação. Os dados ficam salvos no Supabase e podem ser consultados em outro dispositivo ao entrar na mesma conta.</p>
+      <form id="formOrador" onsubmit="salvarOrador(event)">
+        <input type="hidden" id="oradorId">
+        <div class="form-grid">
+          <label>Nome do orador
+            <input id="oradorNome" required maxlength="120" placeholder="Ex.: Henrique César">
+          </label>
+          <label>Tema
+            <input id="oradorTema" required maxlength="200" placeholder="Ex.: Sirva em união com o povo feliz de Deus">
+          </label>
+          <label>Congregação do orador
+            <input id="oradorCongregacao" required maxlength="120" placeholder="Ex.: Messejana">
+          </label>
+          <label>Data do discurso
+            <input id="oradorData" type="date" required>
+          </label>
+          <label>Horário
+            <input id="oradorHorario" type="time" required value="09:00">
+          </label>
+          <label>Período
+            <select id="oradorPeriodo">
+              <option value="Manhã">Manhã</option>
+              <option value="Tarde">Tarde</option>
+              <option value="Noite">Noite</option>
+            </select>
+          </label>
+        </div>
+        <div class="linha form-actions">
+          <button class="salvar" type="submit" id="btnSalvarOrador">💾 Salvar orador</button>
+          <button class="secundario oculto" type="button" id="btnCancelarEdicao" onclick="cancelarEdicao()">Cancelar edição</button>
+        </div>
+      </form>
+    </div>
+    <div class="painel">
+      <div class="linha">
+        <input id="buscarOrador" type="text" placeholder="🔎 Pesquisar orador, tema ou congregação..." oninput="renderOradores()">
+        <button id="tabListaOradores" class="primario" type="button" onclick="mudarVisualizacaoOradores('lista')">📋 Lista completa</button>
+        <button id="tabAgendaOradores" class="secundario" type="button" onclick="mudarVisualizacaoOradores('agenda')">🗓️ Agenda por data</button>
+      </div>
+      <div id="contadoresOradores" class="contadores"></div>
+      <div id="listaOradores"></div>
+    </div>
+  </section>
+</div>
+
+<script defer src="app.js"></script>
+</body>
+</html>
